@@ -68,9 +68,230 @@ Finally, I took out all of the columns that I would no longer need, renamed and 
 And now, I could import the data into python to build the linear regression model
 
 ## Building the regression model
+```
+# importing relevant libraries
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+from sklearn.linear_model import LinearRegression
+```
+```
+# importing the cleaned dataset into jupyter notebooks
+
+prem_transfers = pd.read_excel('premier_league_transfers.xlsx',sheet_name='cleaned')
+
+prem_transfers.head()
+```
+![prem_transfers head()](https://github.com/user-attachments/assets/e5580c50-35e0-48da-8dd3-c15e51f65b57)
+
 After importing the relevant libraries and the cleaned dataset into python, it was time to start building the regression model.
 
 ### Creating dummy variables
+
 At this point, I already knew what my dependent and independent variables were going to be. The dependent variable, which is the model I was going to try to predict was the transfer_fee and the independent variables (predictors) were the year,age,new_position and transfer_period.
 
-However, there was a small problem with the dependent variables. There were two columns there that had categorical data. the new_position and the transfer_period varaibles
+However, there was a small problem with the dependent variables. There were two columns there that had categorical data. The new_position and the transfer_period varaibles. To deal with this, I had to create dummy varaibles for both these columns since regression models can only work with numerical data. 
+
+What is a dummy varaible? According to wikipedia, a dummy variable is one that takes a binary value (0 or 1) to indicate the absence or presence of some categorical effect. 
+
+For the transfer_period, since there were only two categories so I set Summer as 0 and winter as 1.
+
+However, because there were 4 different categories in the new_position column, we had to create multiple dummy variables. The code is as follows:
+```
+#creating a copy of the original dataset so I can input the dummy variables
+pl_transfers = prem_transfers.copy()
+
+#setting summer transfers as 0 and winter transfers as 1
+pl_transfers['transfer_period'] = pl_transfers['transfer_period'].map({'Summer':0,'Winter':1})
+
+#creating dummy variables for new_position
+pos_dummies = pd.get_dummies(pl_transfers['new_position'],drop_first=True) #we drop the first entry (Attacker in our case) to prevent multicollinearity 
+
+#Adding the new position dummy variables into the dataset
+pl_transfers = pd.concat([pl_transfers,pos_dummies], axis=1)
+
+pl_transfers
+```
+**Output:**
+
+![dummy variables](https://github.com/user-attachments/assets/7300e550-f820-4daa-ba1e-a13c8e6080cd)
+
+### First attempt at building the regression model
+
+After getting my dummy variables, I was ready to build my first ever unassisted linear regression model using the Ordinary Least Squares (OLS) method.
+```
+#importing the statsmodels library which will be used for our regression
+
+import statsmodels.api as sm 
+
+#importing the Standard scaler library so we can standardize our predictors (independent variabes).
+
+from sklearn.preprocessing import StandardScaler 
+scaler = StandardScaler()
+
+#declaring the dependent(y) and independent(X) variables
+
+X = pl_transfers[['year','age','transfer_period','Defender','Goalkeeper','Midfielder']]
+y = pl_transfers['transfer_fee']
+
+#standardizing the independent variables
+
+X_scaled = scaler.fit_transform(X)
+
+#Converting the scaled data back into a Dataframe with the original column names
+
+X_scaled = pd.DataFrame(X_scaled, columns = X.columns)
+
+#Adding a constant to the model
+
+x = sm.add_constant(X_scaled)
+
+#fitting the OLS model and getting a summary of the model
+
+model = sm.OLS(y,x).fit()
+model.summary()
+```
+Running the code above, I was hit with the error message below
+```
+---------------------------------------------------------------------------
+MissingDataError                          Traceback (most recent call last)
+~\AppData\Local\Temp/ipykernel_21004/1701416372.py in <module>
+      9 
+     10 
+---> 11 model = sm.OLS(y,X).fit()
+     12 model.summary()
+
+~\anaconda3\lib\site-packages\statsmodels\regression\linear_model.py in __init__(self, endog, exog, missing, hasconst, **kwargs)
+    870     def __init__(self, endog, exog=None, missing='none', hasconst=None,
+    871                  **kwargs):
+--> 872         super(OLS, self).__init__(endog, exog, missing=missing,
+    873                                   hasconst=hasconst, **kwargs)
+    874         if "weights" in self._init_keys:
+
+~\anaconda3\lib\site-packages\statsmodels\regression\linear_model.py in __init__(self, endog, exog, weights, missing, hasconst, **kwargs)
+    701         else:
+    702             weights = weights.squeeze()
+--> 703         super(WLS, self).__init__(endog, exog, missing=missing,
+    704                                   weights=weights, hasconst=hasconst, **kwargs)
+    705         nobs = self.exog.shape[0]
+
+~\anaconda3\lib\site-packages\statsmodels\regression\linear_model.py in __init__(self, endog, exog, **kwargs)
+    188     """
+    189     def __init__(self, endog, exog, **kwargs):
+--> 190         super(RegressionModel, self).__init__(endog, exog, **kwargs)
+    191         self._data_attr.extend(['pinv_wexog', 'weights'])
+    192 
+
+~\anaconda3\lib\site-packages\statsmodels\base\model.py in __init__(self, endog, exog, **kwargs)
+    235 
+    236     def __init__(self, endog, exog=None, **kwargs):
+--> 237         super(LikelihoodModel, self).__init__(endog, exog, **kwargs)
+    238         self.initialize()
+    239 
+
+~\anaconda3\lib\site-packages\statsmodels\base\model.py in __init__(self, endog, exog, **kwargs)
+     75         missing = kwargs.pop('missing', 'none')
+     76         hasconst = kwargs.pop('hasconst', None)
+---> 77         self.data = self._handle_data(endog, exog, missing, hasconst,
+     78                                       **kwargs)
+     79         self.k_constant = self.data.k_constant
+
+~\anaconda3\lib\site-packages\statsmodels\base\model.py in _handle_data(self, endog, exog, missing, hasconst, **kwargs)
+     99 
+    100     def _handle_data(self, endog, exog, missing, hasconst, **kwargs):
+--> 101         data = handle_data(endog, exog, missing, hasconst, **kwargs)
+    102         # kwargs arrays could have changed, easier to just attach here
+    103         for key in kwargs:
+
+~\anaconda3\lib\site-packages\statsmodels\base\data.py in handle_data(endog, exog, missing, hasconst, **kwargs)
+    670 
+    671     klass = handle_data_class_factory(endog, exog)
+--> 672     return klass(endog, exog=exog, missing=missing, hasconst=hasconst,
+    673                  **kwargs)
+
+~\anaconda3\lib\site-packages\statsmodels\base\data.py in __init__(self, endog, exog, missing, hasconst, **kwargs)
+     85         self.const_idx = None
+     86         self.k_constant = 0
+---> 87         self._handle_constant(hasconst)
+     88         self._check_integrity()
+     89         self._cache = {}
+
+~\anaconda3\lib\site-packages\statsmodels\base\data.py in _handle_constant(self, hasconst)
+    131             exog_max = np.max(self.exog, axis=0)
+    132             if not np.isfinite(exog_max).all():
+--> 133                 raise MissingDataError('exog contains inf or nans')
+    134             exog_min = np.min(self.exog, axis=0)
+    135             const_idx = np.where(exog_max == exog_min)[0].squeeze()
+
+MissingDataError: exog contains inf or nans
+```
+Basically, the error message was letting me know that there were missing values in my data. To solve this, I first had to identify where the missing values were coming from. I did this by running the following code
+```
+#identifying the columns with missing values
+x.isna().sum()
+```
+I realized that there were two missing values in the age column. Next, I run the below code to see which rows had a error values and to see if anything could be done about them.
+```
+#identifying the exact rows with missing values in our age column
+pl_transfers[pl_transfers['age'].isna()]
+```
+**Output:**
+
+![missing player ages](https://github.com/user-attachments/assets/7e75a173-e775-4e60-a923-e728f3e17c01)
+
+After a quick google search, I was able to correctly identify the ages both players were when their respective transfers went through. The code below:
+```
+#assigning the right ages to the players with missing age values
+pl_transfers.loc[358,'age'] = 24
+pl_transfers.loc[3649,'age'] = 28
+
+#confirming that the changes made have been effected
+pl_transfers[pl_transfers['age'].isna()]
+```
+**Output:**
+![missing player age check](https://github.com/user-attachments/assets/6e1ed6dc-4504-4886-bc61-5be3b4e41f56)
+
+## Second time's the charm 🙈
+
+After fixing the issues with missing data, I run the model again and below is the summary of the model
+
+```
+#centering the year and age variables
+#this is done so we can predict what the transfer fee is when the year and age variables are at the mean and not when they are 0.
+pl_transfers['year_centered'] = pl_transfers['year']-pl_transfers['year'].mean()
+pl_transfers['age_centered'] = pl_transfers['age']-pl_transfers['age'].mean()
+
+#declaring the dependent(y) and independent(X) variables
+C = pl_transfers[['year_centered','age_centered','transfer_period','Defender','Goalkeeper','Midfielder']]
+d = pl_transfers['transfer_fee']
+
+#Adding a constant to the model
+c = sm.add_constant(C)
+
+#fitting the OLS model and getting a summary of the model
+model = sm.OLS(d,c).fit()
+model.summary()
+```
+![OLS summary](https://github.com/user-attachments/assets/a720f828-ffc9-4b92-b54d-536a4589a75d)
+
+### Interpretating the summary
+Starting off with the R-squared value, this tells us how much of the variability of the dependent variable is explained by the model. A value of 0.184 tells us that 18.4% of the changes in the transfer fees is explained by the model. In this situation this isn't a good look for the model however, this makes sense considering that the model only looks at a players age, position, when the transfer was done and the year the transfer was done in. Important metrics like player performances in previous seasons and the league/team/country a player is being transferred from haven't been considered in the model.
+
+Next thing to look at is the P-value. In the picture, that is denoted as P>|t|. This value let's us know if the coefficients are statistically significant in the model. For a coefficient to be statistically significant, it's P-value would have to be less than 0.05. In the summary, all of varaibles have a P-value less than 0.05 thus we can conclude that all of the independent varaibles in the model are statistically significant. 
+
+Finally, it's time to interprete the coefficients.
+
+- The constant coefficient of 8.299e+06 indicates that if we were given the mean year and player age and all other independent variables were 0, we would have the transfer fees being somewhere around 8,299,000 euros.
+- 5.078e+05 is the coefficient for year and this tells us that as the years increase, the transfer fee of a player also increases by 507,800 euros.
+- For age, we had a coefficient of -1.844e+05. This tells us that there is a negative relationship between a player's age and the transfer fee. As the age of a player increases, their transfer value decreases by 184,400 euros.
+- The coefficient of the transfer period was -8.41e+05. As you will recall, this is a dummy variable with Summer as 0 (reference category) and Winter as 1. This means that the average winter transfer fee is about 841,000 euros less than the average summer transfer fee.
+- Again, here we have another dummy variable with Attacker as our reference category. The coefficient of -2.675e+06 for Defender means that the transfer fee for a defender, on average, is 2,675,000 euros less than an Attacker's.
+- For Goalkeepers, teams in the English Premier league would typically pay an average of 5,319,000 euros less than they would pay for an Attacker
+- And for midfielders, on average, teams would pay 1,272,000 euros less than they would for an attacker
+
+
+
+
