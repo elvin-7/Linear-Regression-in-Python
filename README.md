@@ -1,11 +1,11 @@
-# Linear-Regression-in-Python
-In this repository, I will be taking yoou through the step by step process I went through to create a linear regression model in python using football transfers from 1992 to 2019 in the English Premier League
+# Creating a Linear Regression model with transfers in the English Premier League from 1992 to 2019
+In this repository, I will be taking you through the step by step process I went through to create a linear regression model in python using football transfers from 1992 to 2019 in the English Premier League
 
 ## Introduction
 It's been a while since I put up a data related project. Hopefully, this one would finally be completed :grimacing:🤞. I started my transition from data analytics into the world of data science very recently and in a bid to reinforce what I have picked up so far,
 I have decided to have my first data science project be a linear regression model that looks at football transfers from 1992 to 2022 in the English Premier League and with the model, I am going to try to predict the transfer fee a club in the English Premier League would be willing to pay if we had certain varaibles available. I would also be interpreting the results of the model to help determine how relaible the model is going to be. 
 
-I am already getting pretty excited for this one so without any further ado, let's get started! 😃
+I am already getting pretty excited for this one so without further ado, let's get started! 😃
 
 ## Exploring the data
 The dataset I used for this project can be found [here](https://github.com/ewenme/transfers/blob/master/data/premier-league.csv). Below is a key for the columns in this dataset.
@@ -33,8 +33,9 @@ The first thing I noticed while exploring the dataset was that the fee_cleaned c
 
 Looking at the columns in the dataset, I realized that wouldn't be using the league_name, season and country columns so I would have to delete them from the dataset during the cleaning process. 
 
-I also noticed that data included transfers into and out of the premier league.
+I also noticed that data the included transfers into and out of the premier league.
 For the purpose of this project, I only wanted to see transfers into the premier league. I also decided that I would be taking out all loan transfers from the dataset. 
+
 Another change I decided I was going to make was to reduce the number of player positions to 4 different positions i.e Goalkeeper, Defender, Midfielder and Attacker. Having a fair idea of what I wanted my data to look like, I started the data cleaning process in Microsoft Excel.
 
 ## Cleaning the data
@@ -48,11 +49,11 @@ By removing all the out transfers, I took away both of these problems.
 When all external transfers had been removed, I changed the club_name column name to transfer_to and the club_involved_name to transfer_from because I made the transfer movement much clearer for me.
 
 Next, I took out all loan deals made. To do this, I looked up the word "loan" in the fee column and deleted all loan transfer records from the data set.
-I did this because I ony wanted to focus on permanent transfers premier league clubs had made from 1992 to 2022.
+I did this because I ony wanted to focus on permanent transfers premier league clubs had made from 1992 to 2019.
 
 ![removing loans](https://github.com/user-attachments/assets/405601eb-5517-40af-afef-99b05cc21a34)
 
-The next thing I did was to take out all records without a transfer value. While exploring the data, I realized that some transfers had been made where the fee was undisclosed to the public the dataset had also included included promotions from the junior team into the senior squad as transfers. The value in the fee_cleaned column for these transfers had been recorded as NA and because I wanted the model to predict the cost of a player if certain variables are presented, I would have no use for NA values. And just like I took out all loan transfer records, I filtered for NA in the fee_cleaned column and removed all records without a transfer value as well.
+The next thing I did was to take out all records without a transfer value. These appeared as NA in the fee_cleaned column. Just like I had done with the loan transfers, I filtered for NA in the fee_cleaned column and removed all records with NA.
 
 Then I had to come up with a way to define the different player positions. As mentioned before, there were too many distinct player positions in the original dataset and I believe that every position on a football field can be grouped into 4 main categories, Goalkeeper, Defender, Midfielder and Attacker. Using excel’s unique formula, I was able to draw all the distinct player positions in the original dataset and assign each one of them into my four main categories as shown below.
 
@@ -91,13 +92,13 @@ After importing the relevant libraries and the cleaned dataset into python, it w
 
 ### Creating dummy variables
 
-At this point, I already knew what my dependent and independent variables were going to be. The dependent variable, which is the model I was going to try to predict was the transfer_fee and the independent variables (predictors) were the year,age,new_position and transfer_period.
+At this point, I already knew what my dependent and independent variables were going to be. The dependent variable, which is the variable I was going to try to predict was the transfer_fee and the independent variables (predictors) were year,age,new_position and transfer_period varaibles.
 
-However, there was a small problem with the dependent variables. There were two columns there that had categorical data. The new_position and the transfer_period varaibles. To deal with this, I had to create dummy varaibles for both these columns since regression models can only work with numerical data. 
+However, there was a small problem with the independent variables. There were two columns there that had categorical data. The new_position and the transfer_period columns. To deal with this, I had to create dummy varaibles for both these columns since regression models can only work with numerical data. 
 
 What is a dummy varaible? According to wikipedia, a dummy variable is one that takes a binary value (0 or 1) to indicate the absence or presence of some categorical effect. 
 
-For the transfer_period, since there were only two categories so I set Summer as 0 and winter as 1.
+For the transfer_period, since there were only two categories, I set Summer to 0 and winter to 1.
 
 However, because there were 4 different categories in the new_position column, we had to create multiple dummy variables. The code is as follows:
 ```
@@ -289,9 +290,17 @@ Finally, it's time to interprete the coefficients.
 - For age, we had a coefficient of -1.844e+05. This tells us that there is a negative relationship between a player's age and the transfer fee. As the age of a player increases, their transfer value decreases by 184,400 euros.
 - The coefficient of the transfer period was -8.41e+05. As you will recall, this is a dummy variable with Summer as 0 (reference category) and Winter as 1. This means that the average winter transfer fee is about 841,000 euros less than the average summer transfer fee.
 - Again, here we have another dummy variable with Attacker as our reference category. The coefficient of -2.675e+06 for Defender means that the transfer fee for a defender, on average, is 2,675,000 euros less than an Attacker's.
-- For Goalkeepers, teams in the English Premier league would typically pay an average of 5,319,000 euros less than they would pay for an Attacker
-- And for midfielders, on average, teams would pay 1,272,000 euros less than they would for an attacker
+- For Goalkeepers, teams in the English Premier league would typically pay an average of 5,319,000 euros less than they would pay for an Attacker.
+- And for Midfielders, on average, teams would pay 1,272,000 euros less than they would for an Attacker.
 
+## Conclusion
+Because of the limited amount of data we have available, this model isn't a strong predictor of transfer fees in the English Premier League however, with what we have available, we can see how the interpretation of the summary of the results depict what occurs in the real world.
 
+For example, we know that as players age, their transfer values tend to decrease. We also know that Summer transfers are typically more expensive than winter transfers because the summer is usually when teams persue major transfer targets and because the winter transfer window opens in the middle of the season, teams are more reluctant to let their star players go. 
 
+We also see how Attackers cost more than any other position in football because of the value they offer in terms of goals and assists.
+
+This was a really fun project for me to work on and I hope that as I grow on my way to become a data scientist, the projects that come with that are more insightful!
+
+If you got this far, thanks for reading! 😃
 
